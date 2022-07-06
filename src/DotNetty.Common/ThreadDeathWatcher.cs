@@ -61,6 +61,8 @@ namespace DotNetty.Common
             {
                 try
                 {
+                    Logger.Warn("Thread death watcher scheduled to start");
+                    Console.WriteLine("Thread death watcher scheduled to start");
                     var watcherThread = new Thread(s => ((IRunnable)s).Run());
                     watcherThread.IsBackground = true;
                     watcherThread.Start(watcher);
@@ -69,6 +71,7 @@ namespace DotNetty.Common
                 catch (Exception t)
                 {
                     Logger.Warn("Thread death watcher raised an exception while trying to start the thread:", t);
+                    Console.WriteLine("Thread death watcher raised an exception while trying to start the thread:{0}", t);
                     if (!watcherThread.IsAlive)
                     {
                         bool stopped = Interlocked.CompareExchange(ref started, 0, 1) == 1;
