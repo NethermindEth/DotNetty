@@ -55,14 +55,15 @@ namespace DotNetty.Common
 
         static void Schedule(Thread thread, Action task, bool isWatch)
         {
+            Console.WriteLine("ThreadDeathWatcher: PendingEntries ID:{0} Alive:{1}", thread.Name, thread.IsAlive);
             PendingEntries.TryEnqueue(new Entry(thread, task, isWatch));
-
+            Console.WriteLine("ThreadDeathWatcher: Trying to start");
             if (Interlocked.CompareExchange(ref started, 1, 0) == 0)
             {
                 try
                 {
-                    Logger.Warn("Thread death watcher scheduled to start");
-                    Console.WriteLine("Thread death watcher scheduled to start");
+                    Logger.Warn("ThreadDeathWatcher: Scheduled to start");
+                    Console.WriteLine("ThreadDeathWatcher: Scheduled to start");
                     var watcherThread = new Thread(s => ((IRunnable)s).Run());
                     watcherThread.IsBackground = true;
                     watcherThread.Start(watcher);
@@ -110,19 +111,26 @@ namespace DotNetty.Common
 
             public void Run()
             {
+                Console.WriteLine("ThreadDeathWatcher: Run Started");
+                int i = 0;
                 for (;;)
                 {
+                    Console.WriteLine("ThreadDeathWatcher: Before PendingEntries Count {0}", PendingEntries.Count);
                     this.FetchWatchees();
                     this.NotifyWatchees();
+                    Console.WriteLine("ThreadDeathWatcher: Mid PendingEntries Count {0}", PendingEntries.Count);
 
                     // Try once again just in case notifyWatchees() triggered watch() or unwatch().
                     this.FetchWatchees();
                     this.NotifyWatchees();
+                    Console.WriteLine("ThreadDeathWatcher: After PendingEntries Count {0}", PendingEntries.Count);
+                    Console.WriteLine("ThreadDeathWatcher: FetchWatched and NotifyWatches Done");
 
                     Thread.Sleep(1000);
 
                     if (this.watchees.Count == 0 && PendingEntries.IsEmpty)
                     {
+                        Console.WriteLine("ThreadDeathWatcher: this.watchees.Count == 0 && PendingEntries.IsEmpty");
                         // Mark the current worker thread as stopped.
                         // The following CAS must always success and must be uncontended,
                         // because only one watcher thread should be running at the same time.
@@ -132,6 +140,7 @@ namespace DotNetty.Common
                         // Check if there are pending entries added by watch() while we do CAS above.
                         if (PendingEntries.IsEmpty)
                         {
+                            Console.WriteLine("ThreadDeathWatcher: PendingEntries.IsEmpty");
                             // A) watch() was not invoked and thus there's nothing to handle
                             //    -> safe to terminate because there's nothing left to do
                             // B) a new watcher thread started and handled them all
@@ -142,6 +151,7 @@ namespace DotNetty.Common
                         // There are pending entries again, added by watch()
                         if (Interlocked.CompareExchange(ref started, 1, 0) != 0)
                         {
+                            Console.WriteLine("ThreadDeathWatcher: Interlocked.CompareExchange(ref started, 1, 0) != 0");
                             // watch() started a new watcher thread and set 'started' to true.
                             // -> terminate this thread so that the new watcher reads from pendingEntries exclusively.
                             break;
@@ -151,6 +161,8 @@ namespace DotNetty.Common
                         // i.e. a new watcher thread was not started
                         // -> keep this thread alive to handle the newly added entries.
                     }
+
+                    i = i + 1;
                 }
             }
 
