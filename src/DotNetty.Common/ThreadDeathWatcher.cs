@@ -115,6 +115,7 @@ namespace DotNetty.Common
                 int i = 0;
                 for (;;)
                 {
+                    Console.WriteLine("ThreadDeathWatcher: Run Count Count {0}", i);
                     Console.WriteLine("ThreadDeathWatcher: Before PendingEntries Count {0}", PendingEntries.Count);
                     this.FetchWatchees();
                     this.NotifyWatchees();
