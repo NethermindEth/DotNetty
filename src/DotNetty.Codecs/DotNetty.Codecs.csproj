@@ -2,13 +2,13 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net472;net5.0;net6.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <PackageId>DotNetty.Codecs</PackageId>
+    <!--<PackageId>DotNetty.Codecs</PackageId>
     <Description>General purpose codecs for DotNetty</Description>
-    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>-->
     <AssemblyTitle>DotNetty: codecs</AssemblyTitle>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <VersionPrefix>0.7.5</VersionPrefix>
-    <Authors>Microsoft</Authors>
+    <!--<VersionPrefix>0.7.5</VersionPrefix>
+    <Authors>Microsoft</Authors>-->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -17,19 +17,30 @@
     <AssemblyOriginatorKeyFile>../../DotNetty.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
-    <PackageId>DotNetty.Codecs</PackageId>
+    <!--<PackageId>DotNetty.Codecs</PackageId>
     <PackageTags>socket;tcp;protocol;netty;dotnetty;network;codec</PackageTags>
     <PackageProjectUrl>https://github.com/Azure/DotNetty/</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Azure/DotNetty/</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Azure/DotNetty/</RepositoryUrl>-->
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.3</NetStandardImplicitPackageVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>General purpose codecs for DotNetty</Description>
+    <PackageId>Nethermind.DotNetty.Codecs</PackageId>
+    <PackageTags>socket tcp protocol netty dotnetty network codec</PackageTags>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="..\shared\SharedAssemblyInfo.cs" Link="Properties\SharedAssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
   </ItemGroup>
   <ItemGroup>

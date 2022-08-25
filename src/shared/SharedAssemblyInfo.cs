@@ -5,9 +5,8 @@
 //------------------------------------------------------------------------------
 using System.Reflection;
 
-[assembly: AssemblyCompany("Microsoft")]
+[assembly: AssemblyCompany("Nethermind, Microsoft")]
 [assembly: AssemblyProduct("DotNetty")]
 [assembly: AssemblyVersion("0.7.5")]
 [assembly: AssemblyFileVersion("0.7.5")]
-[assembly: AssemblyCopyright("(c) Microsoft 2015 - 2021")]
-
+[assembly: AssemblyCopyright("Demerzel Solutions Limited, Microsoft Corporation")]

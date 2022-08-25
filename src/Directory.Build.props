@@ -5,19 +5,31 @@
     <Configurations>Debug;Release;Package</Configurations>
     <Platforms>AnyCPU</Platforms>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <DebugType Condition="'$(Configuration)'=='Release'">pdbonly</DebugType>
+    <!--<DebugType Condition="'$(Configuration)'=='Release'">pdbonly</DebugType>
     <DebugSymbols>True</DebugSymbols>
-    <Deterministic>true</Deterministic>
-   
+    <Deterministic>true</Deterministic>-->
+
     <!-- Package Settings -->
     <DebugType Condition="'$(Configuration)'=='Package'">pdbonly</DebugType>
     <Optimize Condition="'$(Configuration)'=='Package'">true</Optimize>
     <PackageOutputPath>$(SolutionDir)build_output\packages</PackageOutputPath>
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Package'">True</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
-    
-    <PackageVersion>0.7.5</PackageVersion>
+
+    <PackageVersion>0.7.5-preview.1</PackageVersion>
     <Version>$(PackageVersion)</Version>
   </PropertyGroup>
-  
+
+  <PropertyGroup Label="Nethermind">
+    <Authors>Nethermind, Microsoft</Authors>
+    <Copyright>Demerzel Solutions Limited, Microsoft Corporation</Copyright>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/nethermindeth/dotnetty</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/nethermindeth/dotnetty</RepositoryUrl>
+    <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
 </Project>

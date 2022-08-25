@@ -1,14 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8"?><Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup Label="NuGet">
     <TargetFrameworks>netstandard2.0;net472;net5.0;net6.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <PackageId>DotNetty.Codecs.Protobuf</PackageId>
+    <!--<PackageId>DotNetty.Codecs.Protobuf</PackageId>
     <Description>Protobuf Proto3 codec for DotNetty</Description>
-    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>-->
     <AssemblyTitle>DotNetty: Protobuf Proto3 codec</AssemblyTitle>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <VersionPrefix>0.7.5</VersionPrefix>
-    <Authors>Microsoft</Authors>
+    <!--<VersionPrefix>0.7.5</VersionPrefix>
+    <Authors>Microsoft</Authors>-->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -16,14 +17,21 @@
     <AssemblyOriginatorKeyFile>../../DotNetty.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
-    <PackageTags>socket;tcp;protocol;netty;dotnetty;network;Protobuf</PackageTags>
+    <!--<PackageTags>socket;tcp;protocol;netty;dotnetty;network;Protobuf</PackageTags>
     <PackageProjectUrl>https://github.com/Azure/DotNetty/</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Azure/DotNetty/</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Azure/DotNetty/</RepositoryUrl>-->
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.3</NetStandardImplicitPackageVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Protobuf Proto3 codec for DotNetty</Description>
+    <PackageId>Nethermind.DotNetty.Codecs.Protobuf</PackageId>
+    <PackageTags>socket tcp protocol netty dotnetty network protobuf</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\shared\SharedAssemblyInfo.cs" Link="Properties\SharedAssemblyInfo.cs" />
   </ItemGroup>
@@ -35,5 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.19.4" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>
