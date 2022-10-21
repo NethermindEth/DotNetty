@@ -42,4 +42,4 @@ jobs:
         if: ${{ inputs.publish }}
         run: |
           dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
-          dotnet nuget push build_output/packages/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://apiint.nugettest.org/v3/index.json
+          dotnet nuget push build_output/packages/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
