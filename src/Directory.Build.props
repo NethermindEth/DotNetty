@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Package'">True</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
 
-    <PackageVersion>0.7.5-preview.1</PackageVersion>
+    <PackageVersion>1.0.0</PackageVersion>
     <Version>$(PackageVersion)</Version>
   </PropertyGroup>
 
