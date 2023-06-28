@@ -236,7 +236,7 @@ namespace DotNetty.Common
             // transfer as many items as we can from this queue to the stack, returning true if any were transferred
             internal bool Transfer(Stack dst)
             {
-                Link head = this.head.link;
+                Link head = this.head?.link;
                 if (head == null)
                 {
                     return false;
@@ -259,6 +259,11 @@ namespace DotNetty.Common
                     return false;
                 }
 
+                if (dst?.elements == null)
+                {
+                    return false;
+                }
+                
                 int dstSize = dst.size;
                 int expectedCapacity = dstSize + srcSize;
 
@@ -273,9 +278,19 @@ namespace DotNetty.Common
                     DefaultHandle[] srcElems = head.elements;
                     DefaultHandle[] dstElems = dst.elements;
                     int newDstSize = dstSize;
+                    if (head.elements == null)
+                    {
+                        return false;
+                    }
+                    
                     for (int i = srcStart; i < srcEnd; i++)
                     {
                         DefaultHandle element = srcElems[i];
+                        if (element == null)
+                        {
+                            return false;
+                        }
+                        
                         if (element.recycleId == 0)
                         {
                             element.recycleId = element.lastRecycledId;
