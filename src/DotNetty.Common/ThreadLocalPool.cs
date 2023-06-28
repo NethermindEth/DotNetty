@@ -236,98 +236,109 @@ namespace DotNetty.Common
             // transfer as many items as we can from this queue to the stack, returning true if any were transferred
             internal bool Transfer(Stack dst)
             {
-                Link head = this.head?.link;
-                if (head == null)
+                try
                 {
-                    return false;
-                }
-
-                if (head.ReadIndex == LinkCapacity)
-                {
-                    if (head.next == null)
+                    Link head = this.head?.link;
+                    if (head == null)
                     {
                         return false;
                     }
-                    this.head.link = head = head.next;
-                }
 
-                int srcStart = head.ReadIndex;
-                int srcEnd = head.WriteIndex;
-                int srcSize = srcEnd - srcStart;
-                if (srcSize == 0)
-                {
-                    return false;
-                }
-
-                if (dst?.elements == null)
-                {
-                    return false;
-                }
-                
-                int dstSize = dst.size;
-                int expectedCapacity = dstSize + srcSize;
-
-                if (expectedCapacity > dst.elements.Length)
-                {
-                    int actualCapacity = dst.IncreaseCapacity(expectedCapacity);
-                    srcEnd = Math.Min(srcStart + actualCapacity - dstSize, srcEnd);
-                }
-
-                if (srcStart != srcEnd)
-                {
-                    DefaultHandle[] srcElems = head.elements;
-                    DefaultHandle[] dstElems = dst.elements;
-                    int newDstSize = dstSize;
-                    if (head.elements == null)
+                    if (head.ReadIndex == LinkCapacity)
                     {
-                        return false;
-                    }
-                    
-                    for (int i = srcStart; i < srcEnd; i++)
-                    {
-                        DefaultHandle element = srcElems[i];
-                        if (element == null)
+                        if (head.next == null)
                         {
                             return false;
                         }
-                        
-                        if (element.recycleId == 0)
-                        {
-                            element.recycleId = element.lastRecycledId;
-                        }
-                        else if (element.recycleId != element.lastRecycledId)
-                        {
-                            throw new InvalidOperationException("recycled already");
-                        }
-                        srcElems[i] = null;
 
-                        if (dst.DropHandle(element))
-                        {
-                            // Drop the object.
-                            continue;
-                        }
-                        element.Stack = dst;
-                        dstElems[newDstSize++] = element;
+                        this.head.link = head = head.next;
                     }
 
-                    if (srcEnd == LinkCapacity && head.next != null)
-                    {
-                        // Add capacity back as the Link is GCed.
-                        this.head.ReclaimSpace(LinkCapacity);
-                        this.head.link = head.next;
-                    }
-
-                    head.ReadIndex = srcEnd;
-                    if (dst.size == newDstSize)
+                    int srcStart = head.ReadIndex;
+                    int srcEnd = head.WriteIndex;
+                    int srcSize = srcEnd - srcStart;
+                    if (srcSize == 0)
                     {
                         return false;
                     }
-                    dst.size = newDstSize;
-                    return true;
+
+                    if (dst?.elements == null)
+                    {
+                        return false;
+                    }
+
+                    int dstSize = dst.size;
+                    int expectedCapacity = dstSize + srcSize;
+
+                    if (expectedCapacity > dst.elements.Length)
+                    {
+                        int actualCapacity = dst.IncreaseCapacity(expectedCapacity);
+                        srcEnd = Math.Min(srcStart + actualCapacity - dstSize, srcEnd);
+                    }
+
+                    if (srcStart != srcEnd)
+                    {
+                        DefaultHandle[] srcElems = head.elements;
+                        DefaultHandle[] dstElems = dst.elements;
+                        int newDstSize = dstSize;
+                        if (head.elements == null)
+                        {
+                            return false;
+                        }
+
+                        for (int i = srcStart; i < srcEnd; i++)
+                        {
+                            DefaultHandle element = srcElems[i];
+                            if (element == null)
+                            {
+                                return false;
+                            }
+
+                            if (element.recycleId == 0)
+                            {
+                                element.recycleId = element.lastRecycledId;
+                            }
+                            else if (element.recycleId != element.lastRecycledId)
+                            {
+                                throw new InvalidOperationException("recycled already");
+                            }
+
+                            srcElems[i] = null;
+
+                            if (dst.DropHandle(element))
+                            {
+                                // Drop the object.
+                                continue;
+                            }
+
+                            element.Stack = dst;
+                            dstElems[newDstSize++] = element;
+                        }
+
+                        if (srcEnd == LinkCapacity && head.next != null)
+                        {
+                            // Add capacity back as the Link is GCed.
+                            this.head.ReclaimSpace(LinkCapacity);
+                            this.head.link = head.next;
+                        }
+
+                        head.ReadIndex = srcEnd;
+                        if (dst.size == newDstSize)
+                        {
+                            return false;
+                        }
+
+                        dst.size = newDstSize;
+                        return true;
+                    }
+                    else
+                    {
+                        // The destination stack is full already.
+                        return false;
+                    }
                 }
-                else
+                catch (NullReferenceException)
                 {
-                    // The destination stack is full already.
                     return false;
                 }
             }
