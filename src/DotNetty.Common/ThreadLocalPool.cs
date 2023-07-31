@@ -56,6 +56,7 @@ namespace DotNetty.Common
                 {
                     throw new InvalidOperationException("recycled already");
                 }
+
                 stack.Push(this);
             }
         }
@@ -107,6 +108,7 @@ namespace DotNetty.Common
                     {
                         Interlocked.Decrement(ref this.weakTableCounter.Value);
                     }
+
                     if (this.availableSharedCapacity == null)
                     {
                         return;
@@ -138,13 +140,14 @@ namespace DotNetty.Common
                 internal static bool ReserveSpace(StrongBox<int> availableSharedCapacity, int space)
                 {
                     Debug.Assert(space >= 0);
-                    for (; ; )
+                    for (;;)
                     {
                         int available = Volatile.Read(ref availableSharedCapacity.Value);
                         if (available < space)
                         {
                             return false;
                         }
+
                         if (Interlocked.CompareExchange(ref availableSharedCapacity.Value, available - space, available) == available)
                         {
                             return true;
@@ -155,7 +158,9 @@ namespace DotNetty.Common
 
             // chain of data items
             readonly Head head;
+
             Link tail;
+
             // pointer to another queue of delayed items for the same stack
             internal WeakOrderQueue next;
             internal readonly WeakReference<Thread> owner;
@@ -220,10 +225,12 @@ namespace DotNetty.Common
                         // Drop it.
                         return;
                     }
+
                     // We allocate a Link so reserve the space
                     this.tail = tail = tail.next = new Link();
                     writeIndex = tail.WriteIndex;
                 }
+
                 tail.elements[writeIndex] = handle;
                 handle.Stack = null;
                 // we lazy set to ensure that setting stack to null appears before we unnull it in the owning thread;
@@ -236,7 +243,7 @@ namespace DotNetty.Common
             // transfer as many items as we can from this queue to the stack, returning true if any were transferred
             internal bool Transfer(Stack dst)
             {
-                Link head = this.head.link;
+                Link head = this.head?.link;
                 if (head == null)
                 {
                     return false;
@@ -248,6 +255,7 @@ namespace DotNetty.Common
                     {
                         return false;
                     }
+
                     this.head.link = head = head.next;
                 }
 
@@ -255,6 +263,11 @@ namespace DotNetty.Common
                 int srcEnd = head.WriteIndex;
                 int srcSize = srcEnd - srcStart;
                 if (srcSize == 0)
+                {
+                    return false;
+                }
+
+                if (dst?.elements == null)
                 {
                     return false;
                 }
@@ -273,9 +286,19 @@ namespace DotNetty.Common
                     DefaultHandle[] srcElems = head.elements;
                     DefaultHandle[] dstElems = dst.elements;
                     int newDstSize = dstSize;
+                    if (head.elements == null)
+                    {
+                        return false;
+                    }
+
                     for (int i = srcStart; i < srcEnd; i++)
                     {
                         DefaultHandle element = srcElems[i];
+                        if (element == null)
+                        {
+                            return false;
+                        }
+
                         if (element.recycleId == 0)
                         {
                             element.recycleId = element.lastRecycledId;
@@ -284,6 +307,7 @@ namespace DotNetty.Common
                         {
                             throw new InvalidOperationException("recycled already");
                         }
+
                         srcElems[i] = null;
 
                         if (dst.DropHandle(element))
@@ -291,6 +315,7 @@ namespace DotNetty.Common
                             // Drop the object.
                             continue;
                         }
+
                         element.Stack = dst;
                         dstElems[newDstSize++] = element;
                     }
@@ -307,6 +332,7 @@ namespace DotNetty.Common
                     {
                         return false;
                     }
+
                     dst.size = newDstSize;
                     return true;
                 }
@@ -344,8 +370,13 @@ namespace DotNetty.Common
             WeakOrderQueue cursorQueue, prevQueue;
             volatile WeakOrderQueue headQueue;
 
-            internal Stack(ThreadLocalPool parent, Thread thread, int maxCapacity, int maxSharedCapacityFactor,
-                int ratioMask, int maxDelayedQueues)
+            internal Stack(
+                ThreadLocalPool parent,
+                Thread thread,
+                int maxCapacity,
+                int maxSharedCapacityFactor,
+                int ratioMask,
+                int maxDelayedQueues)
             {
                 this.parent = parent;
                 this.threadRef = new WeakReference<Thread>(thread);
@@ -410,6 +441,7 @@ namespace DotNetty.Common
                 {
                     throw new InvalidOperationException("released already");
                 }
+
                 item.recycleId = item.lastRecycledId = ownThreadId;
 
                 int size = this.size;
@@ -418,6 +450,7 @@ namespace DotNetty.Common
                     // Hit the maximum capacity - drop the possibly youngest object.
                     return;
                 }
+
                 if (size == this.elements.Length)
                 {
                     Array.Resize(ref this.elements, Math.Min(size << 1, this.maxCapacity));
@@ -443,12 +476,14 @@ namespace DotNetty.Common
                         delayedRecycled.Add(this, WeakOrderQueue.Dummy);
                         return;
                     }
+
                     // Check if we already reached the maximum number of delayed queues and if we can allocate at all.
                     if ((queue = WeakOrderQueue.Allocate(this, thread, countedWeakTable)) == null)
                     {
                         // drop object
                         return;
                     }
+
                     delayedRecycled.Add(this, queue);
                 }
                 else if (queue == WeakOrderQueue.Dummy)
@@ -469,8 +504,10 @@ namespace DotNetty.Common
                         // Drop the object.
                         return true;
                     }
+
                     handle.hasBeenRecycled = true;
                 }
+
                 return false;
             }
 
@@ -486,8 +523,10 @@ namespace DotNetty.Common
                         item = null;
                         return false;
                     }
+
                     size = this.size;
                 }
+
                 size--;
                 DefaultHandle ret = this.elements[size];
                 elements[size] = null;
@@ -495,6 +534,7 @@ namespace DotNetty.Common
                 {
                     throw new InvalidOperationException("recycled multiple times");
                 }
+
                 ret.recycleId = 0;
                 ret.lastRecycledId = 0;
                 this.size = size;
@@ -564,6 +604,7 @@ namespace DotNetty.Common
                                 }
                             }
                         }
+
                         if (prev != null)
                         {
                             prev.Next = next;
@@ -604,6 +645,7 @@ namespace DotNetty.Common
 
                 internal readonly StrongBox<int> Counter = new StrongBox<int>();
             }
+
             protected override CountedWeakTable GetInitialValue() => new CountedWeakTable();
         }
 
@@ -612,8 +654,9 @@ namespace DotNetty.Common
             // In the future, we might have different maxCapacity for different object types.
             // e.g. io.netty.recycler.maxCapacity.writeTask
             //      io.netty.recycler.maxCapacity.outboundBuffer
-            int maxCapacityPerThread = SystemPropertyUtil.GetInt("io.netty.recycler.maxCapacityPerThread",
-                    SystemPropertyUtil.GetInt("io.netty.recycler.maxCapacity", DefaultInitialMaxCapacityPerThread));
+            int maxCapacityPerThread = SystemPropertyUtil.GetInt(
+                "io.netty.recycler.maxCapacityPerThread",
+                SystemPropertyUtil.GetInt("io.netty.recycler.maxCapacity", DefaultInitialMaxCapacityPerThread));
             if (maxCapacityPerThread < 0)
             {
                 maxCapacityPerThread = DefaultInitialMaxCapacityPerThread;
@@ -621,17 +664,21 @@ namespace DotNetty.Common
 
             DefaultMaxCapacityPerThread = maxCapacityPerThread;
 
-            DefaultMaxSharedCapacityFactor = Math.Max(2,
-                    SystemPropertyUtil.GetInt("io.netty.recycler.maxSharedCapacityFactor",
-                            2));
+            DefaultMaxSharedCapacityFactor = Math.Max(
+                2,
+                SystemPropertyUtil.GetInt(
+                    "io.netty.recycler.maxSharedCapacityFactor",
+                    2));
 
-            DefaultMaxDelayedQueuesPerThread = Math.Max(0,
-                    SystemPropertyUtil.GetInt("io.netty.recycler.maxDelayedQueuesPerThread",
-                            // We use the same value as default EventLoop number
-                            Environment.ProcessorCount * 2));
+            DefaultMaxDelayedQueuesPerThread = Math.Max(
+                0,
+                SystemPropertyUtil.GetInt(
+                    "io.netty.recycler.maxDelayedQueuesPerThread",
+                    // We use the same value as default EventLoop number
+                    Environment.ProcessorCount * 2));
 
             LinkCapacity = MathUtil.SafeFindNextPositivePowerOfTwo(
-                    Math.Max(SystemPropertyUtil.GetInt("io.netty.recycler.linkCapacity", 16), 16));
+                Math.Max(SystemPropertyUtil.GetInt("io.netty.recycler.linkCapacity", 16), 16));
 
             // By default we allow one push to a Recycler for each 8th try on handles that were never recycled before.
             // This should help to slowly increase the capacity of the recycler while not be too sensitive to allocation
@@ -663,12 +710,15 @@ namespace DotNetty.Common
         }
 
         public ThreadLocalPool(int maxCapacityPerThread)
-            : this (maxCapacityPerThread, DefaultMaxSharedCapacityFactor, DefaultRatio, DefaultMaxDelayedQueuesPerThread)
+            : this(maxCapacityPerThread, DefaultMaxSharedCapacityFactor, DefaultRatio, DefaultMaxDelayedQueuesPerThread)
         {
         }
 
-        public ThreadLocalPool(int maxCapacityPerThread, int maxSharedCapacityFactor,
-                       int ratio, int maxDelayedQueuesPerThread)
+        public ThreadLocalPool(
+            int maxCapacityPerThread,
+            int maxSharedCapacityFactor,
+            int ratio,
+            int maxDelayedQueuesPerThread)
         {
             this.ratioMask = MathUtil.SafeFindNextPositivePowerOfTwo(ratio) - 1;
             if (maxCapacityPerThread <= 0)
@@ -718,8 +768,13 @@ namespace DotNetty.Common
         {
         }
 
-        public ThreadLocalPool(Func<Handle, T> valueFactory, int maxCapacityPerThread, int maxSharedCapacityFactor,
-                       int ratio, int maxDelayedQueuesPerThread, bool preCreate = false)
+        public ThreadLocalPool(
+            Func<Handle, T> valueFactory,
+            int maxCapacityPerThread,
+            int maxSharedCapacityFactor,
+            int ratio,
+            int maxDelayedQueuesPerThread,
+            bool preCreate = false)
             : base(maxCapacityPerThread, maxSharedCapacityFactor, ratio, maxDelayedQueuesPerThread)
         {
             Contract.Requires(valueFactory != null);
@@ -743,6 +798,7 @@ namespace DotNetty.Common
             {
                 handle = CreateValue(stack);
             }
+
             return (T)handle.Value;
         }
 
@@ -768,8 +824,13 @@ namespace DotNetty.Common
 
             protected override Stack GetInitialValue()
             {
-                var stack = new Stack(this.owner, Thread.CurrentThread, this.owner.maxCapacityPerThread,
-                        this.owner.maxSharedCapacityFactor, this.owner.ratioMask, this.owner.maxDelayedQueuesPerThread);
+                var stack = new Stack(
+                    this.owner,
+                    Thread.CurrentThread,
+                    this.owner.maxCapacityPerThread,
+                    this.owner.maxSharedCapacityFactor,
+                    this.owner.ratioMask,
+                    this.owner.maxDelayedQueuesPerThread);
                 if (this.owner.preCreate)
                 {
                     for (int i = 0; i < this.owner.maxCapacityPerThread; i++)
@@ -777,6 +838,7 @@ namespace DotNetty.Common
                         stack.Push(this.owner.CreateValue(stack));
                     }
                 }
+
                 return stack;
             }
 
