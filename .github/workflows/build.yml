@@ -8,10 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish package'
-        default: false
-        required: false 
-        type: boolean
+        description: Publish to NuGet
+        default: None
+        type: choice
+        options:
+          - 'No'
+          - Staging
+          - Production
 
 jobs:
   build:
@@ -22,12 +25,10 @@ jobs:
     steps:
     
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
     
       - name: Set up .NET
-        uses: actions/setup-dotnet@v2
-        with:
-          dotnet-version: 6.0.x
+        uses: actions/setup-dotnet@v4
 
       - name: Install dependencies
         run: dotnet restore
@@ -35,11 +36,13 @@ jobs:
       - name: Build
         run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore -p:ContinuousIntegrationBuild=true
 
-      #- name: Test
-      #  run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
+      # - name: Test
+      #   run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore -p:ContinuousIntegrationBuild=true
     
       - name: Publish
-        if: ${{ inputs.publish }}
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'No'
         run: |
           dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
-          dotnet nuget push build_output/packages/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push build_output/packages/*.nupkg \
+            -k ${{ github.event.inputs.publish == 'Staging' && secrets.NUGETTEST_API_KEY || secrets.NUGET_API_KEY }} \
+            -s ${{ github.event.inputs.publish == 'Staging' && 'https://apiint.nugettest.org/v3/index.json' || 'https://api.nuget.org/v3/index.json' }}
