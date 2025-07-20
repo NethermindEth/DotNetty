@@ -7,6 +7,7 @@ using System.Reflection;
 
 [assembly: AssemblyCompany("Nethermind, Microsoft")]
 [assembly: AssemblyProduct("DotNetty")]
-[assembly: AssemblyVersion("1.0.0")]
-[assembly: AssemblyFileVersion("1.0.0")]
+[assembly: AssemblyVersion("0.7.6")]
+[assembly: AssemblyFileVersion("0.7.6")]
 [assembly: AssemblyCopyright("Demerzel Solutions Limited, Microsoft Corporation")]
+
