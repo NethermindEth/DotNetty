@@ -11,7 +11,7 @@ namespace DotNetty.Transport.Channels.Sockets
 
     public class DefaultDatagramChannelConfig : DefaultChannelConfiguration, IDatagramChannelConfig
     {
-        const int DefaultFixedBufferSize = 4096;
+        const int DefaultFixedBufferSize = 10240;
 
         readonly Socket socket;
 
