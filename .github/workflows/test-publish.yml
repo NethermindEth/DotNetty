@@ -1,15 +1,15 @@
-name: Build
+name: Test / Publish
 
 on:
   push:
     paths:
-      - '.github/workflows/build.yml'
+      - '.github/workflows/test-publish.yml'
       - 'src/**'
   workflow_dispatch:
     inputs:
       publish:
         description: Publish to NuGet
-        default: None
+        default: 'No'
         type: choice
         options:
           - 'No'
@@ -18,17 +18,20 @@ on:
 
 jobs:
   build:
-    env:
-      BUILD_CONFIG: release
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      BUILD_CONFIG: release
+      NUGET_HOST: ${{ inputs.publish == 'Staging' && 'https://int.nugettest.org' || 'https://www.nuget.org' }}
     steps:
-    
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
     
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
 
       - name: Install dependencies
         run: dotnet restore
@@ -38,11 +41,19 @@ jobs:
 
       # - name: Test
       #   run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: NuGet login
+        uses: nuget/login@v1
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'No'
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+          audience: ${{ env.NUGET_HOST }}
+          token-service-url: ${{ env.NUGET_HOST }}/api/v2/token
     
       - name: Publish
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'No'
         run: |
           dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
           dotnet nuget push build_output/packages/*.nupkg \
-            -k ${{ github.event.inputs.publish == 'Staging' && secrets.NUGETTEST_API_KEY || secrets.NUGET_API_KEY }} \
-            -s ${{ github.event.inputs.publish == 'Staging' && 'https://apiint.nugettest.org/v3/index.json' || 'https://api.nuget.org/v3/index.json' }}
+            -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s ${{ env.NUGET_HOST }}/api/v2/package
