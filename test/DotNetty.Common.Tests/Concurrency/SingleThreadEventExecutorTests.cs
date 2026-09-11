@@ -139,6 +139,33 @@ namespace DotNetty.Common.Tests.Concurrency
             Assert.True(shutdownTask.IsCompleted);
         }
 
+        [Fact]
+        public async Task ShutdownWhileTasksAreStillBeingQueued()
+        {
+            var scheduler = new SingleThreadEventExecutor("test", TimeSpan.FromMilliseconds(10));
+            await scheduler.SubmitAsync(() => 0);
+
+            var stopProducer = new CancellationTokenSource();
+            Task producer = Task.Factory.StartNew(
+                () =>
+                {
+                    while (!stopProducer.IsCancellationRequested)
+                    {
+                        scheduler.Execute(() => { });
+                        Thread.Sleep(0);
+                    }
+                },
+                TaskCreationOptions.LongRunning);
+
+            Task shutdownTask = scheduler.ShutdownGracefullyAsync(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            stopProducer.Cancel();
+            await producer;
+
+            await Task.WhenAny(shutdownTask, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.True(shutdownTask.IsCompleted);
+        }
+
         class Container<T>
         {
             public T Value;
