@@ -140,6 +140,27 @@ namespace DotNetty.Common.Tests.Concurrency
         }
 
         [Fact]
+        public async Task ShutdownWithWakeupQueuedBeforeCleanup()
+        {
+            var scheduler = new SingleThreadEventExecutor("test", TimeSpan.FromMilliseconds(10));
+            var taskStarted = new ManualResetEventSlim();
+            var releaseTask = new ManualResetEventSlim();
+            scheduler.Execute(() =>
+            {
+                taskStarted.Set();
+                releaseTask.Wait();
+            });
+
+            Assert.True(taskStarted.Wait(TimeSpan.FromSeconds(1)));
+            Task shutdownTask = scheduler.ShutdownGracefullyAsync(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            releaseTask.Set();
+
+            await Task.WhenAny(shutdownTask, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.True(shutdownTask.IsCompleted);
+            await shutdownTask;
+        }
+
+        [Fact]
         public async Task ShutdownWhileTasksAreStillBeingQueued()
         {
             var scheduler = new SingleThreadEventExecutor("test", TimeSpan.FromMilliseconds(10));
@@ -164,6 +185,7 @@ namespace DotNetty.Common.Tests.Concurrency
 
             await Task.WhenAny(shutdownTask, Task.Delay(TimeSpan.FromSeconds(5)));
             Assert.True(shutdownTask.IsCompleted);
+            await shutdownTask;
         }
 
         class Container<T>
