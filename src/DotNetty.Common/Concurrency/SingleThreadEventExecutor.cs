@@ -489,31 +489,40 @@ namespace DotNetty.Common.Concurrency
         {
             Contract.Assert(this.InEventLoop);
 
-            IRunnable task;
-            if (!this.taskQueue.TryDequeue(out task))
+            while (true)
             {
-                this.emptyEvent.Reset();
-                if (!this.taskQueue.TryDequeue(out task) && !this.IsShuttingDown) // revisit queue as producer might have put a task in meanwhile
+                IRunnable task;
+                if (!this.taskQueue.TryDequeue(out task))
                 {
-                    IScheduledRunnable nextScheduledTask = this.ScheduledTaskQueue.Peek();
-                    if (nextScheduledTask != null)
+                    this.emptyEvent.Reset();
+                    if (!this.taskQueue.TryDequeue(out task) && !this.IsShuttingDown) // revisit queue as producer might have put a task in meanwhile
                     {
-                        PreciseTimeSpan wakeupTimeout = nextScheduledTask.Deadline - PreciseTimeSpan.FromStart;
-                        if (wakeupTimeout.Ticks > 0)
+                        IScheduledRunnable nextScheduledTask = this.ScheduledTaskQueue.Peek();
+                        if (nextScheduledTask != null)
                         {
-                            double timeout = wakeupTimeout.ToTimeSpan().TotalMilliseconds;
-                            this.emptyEvent.Wait((int)Math.Min(timeout, int.MaxValue - 1));
+                            PreciseTimeSpan wakeupTimeout = nextScheduledTask.Deadline - PreciseTimeSpan.FromStart;
+                            if (wakeupTimeout.Ticks > 0)
+                            {
+                                double timeout = wakeupTimeout.ToTimeSpan().TotalMilliseconds;
+                                this.emptyEvent.Wait((int)Math.Min(timeout, int.MaxValue - 1));
+                            }
+                        }
+                        else
+                        {
+                            this.emptyEvent.Wait();
+                            this.taskQueue.TryDequeue(out task);
                         }
                     }
-                    else
-                    {
-                        this.emptyEvent.Wait();
-                        this.taskQueue.TryDequeue(out task);
-                    }
+                }
+
+                // A wake-up carries no work, but returning it makes RunAllTasks() report that a task ran, and
+                // ConfirmShutdown() answers that by queueing another wake-up - so graceful shutdown would never
+                // observe an idle queue and would spin until the process dies.
+                if (!ReferenceEquals(task, WAKEUP_TASK))
+                {
+                    return task;
                 }
             }
-
-            return task;
         }
 
         sealed class NoOpRunnable : IRunnable
