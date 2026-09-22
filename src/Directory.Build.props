@@ -15,8 +15,8 @@
     <PackageOutputPath>$(SolutionDir)build_output\packages</PackageOutputPath>
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Package'">True</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
-
-    <PackageVersion>1.0.3.076-preview.1</PackageVersion>
+    
+    <PackageVersion>0.8.0</PackageVersion>
     <Version>$(PackageVersion)</Version>
   </PropertyGroup>
 

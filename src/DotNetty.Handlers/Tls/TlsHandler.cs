@@ -142,25 +142,14 @@ namespace DotNetty.Handlers.Tls
                     
                     // Due to possible async execution of HandleHandshakeCompleted continuation, we need to
                     // Unwrap any pending app data packets in case, when read completed and no more messages in the channel.
+                    // 
+                    // IMPORTANT: We defer processing to the next event loop iteration to ensure that upstream handlers
+                    // have processed the TlsHandshakeCompletionEvent.Success before receiving application data.
+                    // This fixes a race condition where application data (e.g., MQTT CONNECT) arrives in the same
+                    // TCP segment as the final handshake message, and gets processed before handlers are ready.
                     if (self.pendingDataPackets != null && self.pendingDataPackets.Count > 0)
                     {
-                        ThreadLocalObjectList output = ThreadLocalObjectList.NewInstance();
-                        try
-                        {
-                            self.Unwrap(self.capturedContext, Unpooled.Empty, 0, 0, new List<(int packetLength, byte packetContentType)>(0), output);
-                            for (int i = 0; i < output.Count; i++)
-                            {
-                                self.capturedContext.FireChannelRead(output[i]);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new DecoderException(ex);
-                        }
-                        finally
-                        {
-                            output.Return();
-                        }
+                        self.capturedContext.Executor.Execute(() => self.ProcessPendingDataPackets());
                     }
 
                     if (oldState.Has(TlsHandlerState.ReadRequestedBeforeAuthenticated) && !self.capturedContext.Channel.Configuration.AutoRead)
@@ -556,6 +545,43 @@ namespace DotNetty.Handlers.Tls
         {
             ArraySegment<byte> outlet = outputBuffer.GetIoBuffer(outputBuffer.WriterIndex, outputBufferLength);
             return this.sslStream.ReadAsync(outlet.Array, outlet.Offset, outlet.Count);
+        }
+
+        /// <summary>
+        /// Process pending data packets that arrived before handshake completion was signaled.
+        /// This is called on the next event loop iteration to ensure upstream handlers have
+        /// processed the TlsHandshakeCompletionEvent before receiving application data.
+        /// </summary>
+        void ProcessPendingDataPackets()
+        {
+            if (this.pendingDataPackets == null || this.pendingDataPackets.Count == 0)
+            {
+                return;
+            }
+
+            ThreadLocalObjectList output = ThreadLocalObjectList.NewInstance();
+            try
+            {
+                this.Unwrap(this.capturedContext, Unpooled.Empty, 0, 0, new List<(int packetLength, byte packetContentType)>(0), output);
+                for (int i = 0; i < output.Count; i++)
+                {
+                    this.capturedContext.FireChannelRead(output[i]);
+                }
+                
+                // Signal read complete after processing pending packets
+                if (output.Count > 0)
+                {
+                    this.capturedContext.FireChannelReadComplete();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.HandleFailure(ex);
+            }
+            finally
+            {
+                output.Return();
+            }
         }
 
         public override void Read(IChannelHandlerContext context)
