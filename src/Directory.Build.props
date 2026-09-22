@@ -8,6 +8,7 @@
     <!--<DebugType Condition="'$(Configuration)'=='Release'">pdbonly</DebugType>
     <DebugSymbols>True</DebugSymbols>
     <Deterministic>true</Deterministic>-->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 
     <!-- Package Settings -->
     <DebugType Condition="'$(Configuration)'=='Package'">pdbonly</DebugType>
