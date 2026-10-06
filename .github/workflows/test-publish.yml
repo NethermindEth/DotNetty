@@ -42,7 +42,8 @@ jobs:
       contents: read
       id-token: write
     env:
-      NUGET_HOST: ${{ inputs.publish == 'Staging' && 'https://int.nugettest.org' || 'https://www.nuget.org' }}
+      NUGET_URL: ${{ inputs.publish == 'Staging' && 'https://int.nugettest.org' || 'https://www.nuget.org' }}
+      NUGET_SOURCE: ${{ inputs.publish == 'Staging' && 'https://apiint.nugettest.org' || 'https://api.nuget.org' }}/v3/index.json
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -63,11 +64,11 @@ jobs:
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
-          audience: ${{ env.NUGET_HOST }}
-          token-service-url: ${{ env.NUGET_HOST }}/api/v2/token
+          audience: ${{ env.NUGET_URL }}
+          token-service-url: ${{ env.NUGET_URL }}/api/v2/token
     
       - name: Publish
         run: |
           dotnet pack -c release -p:PackageVersion=${{ steps.version.outputs.version }}.${{ github.run_number }}
           dotnet nuget push build_output/packages/*.nupkg \
-            -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s ${{ env.NUGET_HOST }}/api/v2/package
+            -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s ${{ env.NUGET_SOURCE }}
